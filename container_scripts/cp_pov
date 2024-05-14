@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# This performs the CP-specific PoV harness. It may be replaced with a script
+# or binary for a different interpreter. The name MUST NOT change.
+
+set -e
+set -o pipefail
+
+warn() {
+    echo "$*" >&2
+}
+
+die() {
+    warn "$*"
+    exit 1
+}
+
+BLOB_FILE=${1:-}
+HARNESS_FILE=${2:-}
+shift
+shift
+
+[[ -f "${BLOB_FILE}" ]] || die "Invalid input, missing blob file: $BLOB_FILE"
+[[ -f "${HARNESS_FILE}" ]] || die "Invalid input, missing harness file: $HARNESS_FILE"
+
+"$HARNESS_FILE" "$BLOB_FILE"

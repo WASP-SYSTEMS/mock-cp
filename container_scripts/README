@@ -1,0 +1,2 @@
+This directory is used to store scripts that are only meant to execute inside the containers.
+These files are included for any desired analysis.

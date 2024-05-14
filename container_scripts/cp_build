@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# This performs the CP-specific build. It may be replaced with a script
+# or binary for a different interpreter. The name MUST NOT change.
+
+set -e
+set -o pipefail
+
+# set parallel value
+: "${NPROC_VAL:=$(nproc)}"
+
+warn() {
+    echo "$*" >&2
+}
+
+die() {
+    warn "$*"
+    exit 1
+}
+
+make -C ${SRC}/samples -j ${NPROC_VAL}
+cp -f ${SRC}/test/stdin_harness.sh ${OUT}

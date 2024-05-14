@@ -1,0 +1,17 @@
+diff --git a/mock_vp.c b/mock_vp.c
+index d4016f7..fbcbb12 100644
+--- a/mock_vp.c
++++ b/mock_vp.c
+@@ -21,8 +21,10 @@ int main()
+     int j;
+     printf("display item #:");
+     scanf("%d", &j);
+-    buff = &items[j][0];
+-    printf("item %d: %s\n", j, buff);
++    if (j < 0 || j>2){;}else{
++        buff = &items[0][0];
++        printf("item %d: %s\n", j, buff);
++    }
+ 
+ 
+     return 0;
