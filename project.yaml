@@ -14,7 +14,7 @@ language: c
 # to checking out the "main" branch of the specified repo from "address".
 cp_sources:
     samples:
-        address: git@github.com:aixcc-sc/mock-cp.git
+        address: git@github.com:aixcc-sc/mock-cp-src.git
         ref: v1.0.0
 
 # The docker_image property denotes the address to pull the pre-built Docker
