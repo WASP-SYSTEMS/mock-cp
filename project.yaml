@@ -15,7 +15,7 @@ language: c
 cp_sources:
     samples:
         address: git@github.com:aixcc-sc/mock-cp-src.git
-        ref: v1.0.0
+        ref: v1.1.0
 
 # The docker_image property denotes the address to pull the pre-built Docker
 # image for the CP.
