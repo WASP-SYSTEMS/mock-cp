@@ -21,7 +21,7 @@ cp_sources:
 
 # The docker_image property denotes the address to pull the pre-built Docker
 # image for the CP.
-docker_image: ghcr.io/aixcc-sc/mock-cp:v2.0.3
+docker_image: ghcr.io/aixcc-sc/mock-cp:v3.0.0
 
 # The sanitizers property denotes which sanitizers are available for scoring for
 # the CP. When specifying a sanitizer ID to the scoring server, use the *key*
