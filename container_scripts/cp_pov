@@ -17,10 +17,10 @@ die() {
 
 BLOB_FILE=${1:-}
 HARNESS_FILE=${OUT}/${2:-}
-shift
-shift
+
+export ASAN_OPTIONS=detect_leaks=0
 
 [[ -f "${BLOB_FILE}" ]] || die "Invalid input, missing blob file: $BLOB_FILE"
-[[ -f "${HARNESS_FILE}" ]] || die "Invalid input, missing harness file: $HARNESS_FILE"
+[[ -x "${HARNESS_FILE}" ]] || die "Invalid input, missing harness file: $HARNESS_FILE"
 
-"$HARNESS_FILE" "$BLOB_FILE"
+bash -c "$HARNESS_FILE $BLOB_FILE" || true

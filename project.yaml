@@ -15,7 +15,7 @@ language: c
 cp_sources:
     samples:
         address: git@github.com:aixcc-sc/mock-cp-src.git
-        ref: v1.1.0
+        ref: v2.0.1
         artifacts:
             - src/samples/mock_vp
 
@@ -43,6 +43,6 @@ sanitizers:
 # `run.sh run_pov <args>`.
 harnesses:
     id_1:
-        name: stdin_harness.sh
-        source: src/test/stdin_harness.sh
-        binary: out/stdin_harness.sh
+        name: filein_harness
+        source: src/test/filein_harness.c
+        binary: out/filein_harness
