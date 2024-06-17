@@ -16,7 +16,7 @@ die() {
 }
 
 BLOB_FILE=${1:-}
-HARNESS_FILE=${2:-}
+HARNESS_FILE=${OUT}/${2:-}
 shift
 shift
 

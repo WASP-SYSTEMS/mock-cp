@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# check the vm.mmap_rnd_bits value first and issue warning if too large
+_rnd_bits=$(sysctl vm.mmap_rnd_bits 2> /dev/null | cut -d "=" -f2)
+if [[ -n ${_rnd_bits} ]] && [[ ${_rnd_bits} -gt 28 ]]; then
+    echo "WARNING: vm.mmap_rnd_bits is greater than 28." \
+          "This is known to cause issues with some sanitizers." >&2
+fi
+
 set -e
 
 # if LOCAL_USER is set to something other than root ...

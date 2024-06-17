@@ -1,6 +1,6 @@
 out/
 work/
-src/
-!out/README
-!work/README
-!src/README
+src/.pulled*
+
+# add CP-specific sources to gitignore list
+src/samples

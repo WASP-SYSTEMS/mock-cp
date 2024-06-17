@@ -7,8 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] – 2024-MM-DD
 
+### Added
+
+- Added an `artifacts` sequence to the `cp_sources` entry in the
+  `project.yaml`.
+- Added a check to `entrypoint.sh` to issue a warning if the host setting for
+  `vm.mmap_rnd_bits` is above 28.
+- Added the "-v" option to `run.sh` to turn on verbose debug messages.
+- Added the "-x" option to `run.sh` to force it to return the exit code
+  from the internal `docker run` invocations.
+- Added the "-h" option to `run.sh` to print a help menu.
+
 ### Changed
 
+- Changed `run.sh` to no longer add the `out/` prefix to the harness name
+  argument in the `run_pov` command. The individual CPs will handle this
+  name uniquely to their needs.
+- Use `work/.gitkeep` and `out/.gitkeep` and `.gitignore` instead of
+  READMEs to maintain `src`, `work`, and `out` in the repository.
 - Updated `mock-cp-src` repo reference to tag v1.1.0.
 
 ## [2.0.3] – 2024-05-16

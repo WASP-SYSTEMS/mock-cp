@@ -57,6 +57,12 @@ CP_DOCKER_IMAGE=$(yq  -r '.docker_image' "${SCRIPT_DIR}/project.yaml" 2>/dev/nul
 # pass through calling user to Docker container
 : "${DOCKER_USER_ARGS:="-e LOCAL_USER=$(id -u):$(id -g)"}"
 
+# global variable to indicate if the docker run exit code is returned
+__RETURN_DOCKER_EXIT_CODE=0
+
+# global variable to enable verbosity
+__VERBOSE=0
+
 #################################
 ## Utility functions
 #################################
@@ -64,7 +70,12 @@ CP_DOCKER_IMAGE=$(yq  -r '.docker_image' "${SCRIPT_DIR}/project.yaml" 2>/dev/nul
 print_usage() {
     warn "A helper script for CP interactions."
     warn
-    warn "Usage: ${SCRIPT_FILE} build|run_pov|run_test|custom"
+    warn "Usage: ${SCRIPT_FILE} [OPTIONS] build|run_pov|run_test|custom"
+    warn
+    warn "OPTIONS:"
+    warn "  -h    Print this help menu"
+    warn "  -v    Turn on verbose debug messages"
+    warn "  -x    Force this script to exit with the exit code from the docker run command"
     warn
     warn "Subcommands:"
     warn "  build [<patch_file> <source>]       Build the CP (an optional patch file for a given source repo can be supplied)"
@@ -72,6 +83,11 @@ print_usage() {
     warn "  run_tests                           Run functionality tests"
     warn "  custom <arbitrary cmd ...>          Run an arbitrary command in the docker container"
     die
+}
+
+# echo/log message if verbosity is on
+verbose() {
+    [[ ${__VERBOSE} -gt 0 ]] && echo "<DEBUG> $*"
 }
 
 check_docker_image() {
@@ -101,11 +117,22 @@ docker_run_generic() {
         mkdir -p "${output_cmd_dir}" || output_cmd_dir="${OUT}"
     fi
 
+    verbose "created output directory: ${output_cmd_dir}"
+
     # delete the container ID file if it exists (can't be reused)
     [[ -f "${output_cmd_dir}/docker.cid" ]] && \
         rm -rf "${output_cmd_dir}/docker.cid"
 
     # call "docker run" with the set environment variables and passed args
+    # shellcheck disable=SC2086
+    verbose "running: docker run \
+--cidfile \"${output_cmd_dir}/docker.cid\" \
+${DOCKER_VOL_ARGS} \
+${DOCKER_ENV_ARGS} \
+${DOCKER_USER_ARGS} \
+${DOCKER_EXTRA_ARGS} \
+${DOCKER_IMAGE_NAME} \
+\"$*\""
     # shellcheck disable=SC2086
     docker run \
         --cidfile "${output_cmd_dir}/docker.cid" \
@@ -119,6 +146,8 @@ docker_run_generic() {
     # preserve exit code from "docker run"
     _status=$?
 
+    verbose "docker run returned: ${_status}"
+
     # absence of docker.cid implies "docker run" failed so just exit
     # with the direct exit code from "docker run" (like w/ status >= 125)
     if [[ ! -f "${output_cmd_dir}/docker.cid" ]]; then
@@ -128,9 +157,11 @@ docker_run_generic() {
 
     # from here, docker.cid exists so preserve the docker logs and exit code
     # if the container is not running anymore
+    _status=0
 
     # obtain contained ID
     _cid="$(cat "${output_cmd_dir}/docker.cid")"
+    verbose "docker container's cid: ${_cid}"
 
     # record the container logs if the output directory exists
     if [[ -d "${output_cmd_dir}" ]]; then
@@ -146,6 +177,8 @@ docker_run_generic() {
     else # container is not running
         # record the exit code if the output directory exists
         exitcode=$(docker inspect -f '{{.State.ExitCode}}' "${_cid}")
+        verbose "docker container's exitcode: ${exitcode}"
+        [[ ${__RETURN_DOCKER_EXIT_CODE} == 1 ]] && _status=${exitcode}
         if [[ -d "${output_cmd_dir}" ]]; then
             echo -n "${exitcode}" > "${output_cmd_dir}/exitcode"
         else
@@ -155,9 +188,8 @@ docker_run_generic() {
         docker rm -v "${_cid}" > /dev/null 2>&1 || true
     fi
 
-    # exit this script with 0 if "docker run" did execute - the preserved
-    # exit code from "docker run" is in ${output_cmd_dir}/exitcode
-    exit 0
+    # shellcheck disable=SC2086
+    exit ${_status}
 }
 
 # create an output directory in ${OUT}/output/<timestamp>--cmd
@@ -189,6 +221,8 @@ build() {
         PATCH_FILE=$1
         SOURCE_TARGET=$2
 
+        verbose "patching with: $PATCH_FILE on ${SRC}/${SOURCE_TARGET} using arguments {${PATCH_EXTRA_ARGS}}"
+
         if [ ! -d "${SRC}/${SOURCE_TARGET}" ]; then
             warn "Source repository not found: ${SRC}/${SOURCE_TARGET}"
             die
@@ -219,10 +253,15 @@ run_pov() {
     # do sanity checks before calling docker run
     docker_run_cmd_setup_steps
 
+    # check validity of arguments for run_pov command
+    BLOB_FILE=$1
+    HARNESS_NAME=$2
+    [[ -n "${BLOB_FILE}" ]] || die "Missing blob file argument"
+    [[ -f "${BLOB_FILE}" ]] || die "Blob file not found: ${BLOB_FILE}"
+    [[ -n "${HARNESS_NAME}" ]] || die "Missing harness argument"
+
     ##### Copy blob file to work directory #####
 
-    BLOB_FILE=$1
-    HARNESS_ID=$2
     cp "$BLOB_FILE" "${WORK}/tmp_blob" \
         || die "No blob file found!"
 
@@ -230,7 +269,7 @@ run_pov() {
 
     docker_run_generic \
         "$(create_output_directory "run_pov")" \
-        "cmd_harness.sh" "pov" "/work/tmp_blob" "/out/${HARNESS_ID}"
+        "cmd_harness.sh" "pov" "/work/tmp_blob" "${HARNESS_NAME}"
 }
 
 # "run_tests" command handler
@@ -274,10 +313,22 @@ declare -A MAIN_COMMANDS=(
 #################################
 
 # look for needed commands/dependencies
-REQUIRED_COMMANDS="git docker rsync"
+REQUIRED_COMMANDS="git docker"
 for c in ${REQUIRED_COMMANDS}; do
     command -v "${c}" >/dev/null || warn "WARNING: needed executable (${c}) not found in PATH"
 done
+
+# parse entry/global options
+while getopts ":hxv" opt; do
+    case ${opt} in
+        h) print_usage;; # help
+        x) __RETURN_DOCKER_EXIT_CODE=1;; # exit script with docker run exit code
+        v) __VERBOSE=1; verbose "invoked as: ${SCRIPT_FILE} $*";; # turn on verbosity
+        ?) warn "Invalid option: -${OPTARG}"; print_usage;; # error, print usage
+    esac
+done
+
+shift "$((OPTIND-1))"
 
 # call subcommand function from declared array of handlers (default to help)
 "${MAIN_COMMANDS[${1:-help}]:-${MAIN_COMMANDS[help]}}" "$@"

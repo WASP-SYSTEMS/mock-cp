@@ -1,32 +1,36 @@
-# Mock Challenge Project 
+# Mock Challenge Project
 
 This repository represents a minimal sample AIxCC ASC Challenge Project.
 
-## Using this repository
-
-This repository is meant to be used as a minimal Challenge Project Exemplar for testing CRSs and CI/CD integration.
-
 ## What's in this repository
 
-`src/` - this directory is where CP source code is loaded, analyzed, and built from.
+`src/` - this directory is where CP source code is loaded, analyzed, and built
+         from.
 
-`out/` - this directory is used to store artifacts generated from the docker containers.
+`out/` - this directory is used to store artifacts generated from the docker
+         containers.
 
-`work/` - this directory is used to store temporary or intermediate artifacts passed to and from containers.
+`work/` - this directory is used to store temporary or intermediate artifacts
+          passed to and from containers.
 
-`container_scripts/` - this directory contains scripts used in the Docker container to process requested operations form `run.sh`.
+`container_scripts/` - this directory contains scripts used in the Docker
+                       container to process requested operations from `run.sh`.
 
 `includes/` - directory that holds target-specific Makefiles.
 
-`run.sh` - a script that provides a CRS with a standardized interface to interact with the challenge project.
+`run.sh` - a script that provides a CRS with a standardized interface to
+           interact with the challenge project.
 
-`project.yaml` - a yaml document detailing many important aspects of the challenge project.
+`project.yaml` - a yaml document detailing many important aspects of the
+                 challenge project.
 
-`Dockerfile` - the Dockerfile used to create the CP docker image for building, running, testing.
+`Dockerfile` - the Dockerfile used to create the CP docker image for building,
+               running, testing.
 
 `.env.project` - CP-specific environment variables used for configuration.
 
-`.env.docker` - Default environment variables file passed to running docker containers.
+`.env.docker` - Default environment variables file passed to running docker
+                containers.
 
 `Makefile` - top-level Makefile for development-related targets.
 
@@ -36,14 +40,21 @@ Prior to evaluating a CP that is specified in this repo, there are a number of
 dependencies and initial steps that should be taken.
 
 First, to use this repository in a development (pre-game) environment, the
-following dependencies are required. Note, the tested (default) operating system is
-Ubuntu 22.04.
+following dependencies are required. Note, the tested (default) operating system
+is Ubuntu 22.04.
 
 ```bash
 - docker >= 24.0.5
 - GNU make >= 4.3
 - yq >= 4
 ```
+
+**NOTE:** Due to recent changes in newer kernels, some sanitizers can encounter
+undesirable behaviors because the default value for `vm.mmap_rnd_bits` was
+increased to 32. More details can be found here: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2056762.
+The CP Docker container will issue a warning if it finds that the host setting
+for `vm.mmap_rnd_bits` is above 28, which was the old default. This can be
+quieted by overriding the host setting with `sudo sysctl vm.mmap_rnd_bits=28`.
 
 Prior to using `run.sh`, the CP source code repositories specified in the
 `project.yaml` file must be obtained. Assuming the proper repository access
@@ -110,13 +121,18 @@ The usage output with example commands is included below.
 ```bash
 A helper script for CP interactions.
 
-Usage: run.sh build|run_pov|run_test|custom
+Usage: run.sh [OPTIONS] build|run_pov|run_test|custom
+
+OPTIONS:
+  -h    Print this help menu
+  -v    Turn on verbose debug messages
+  -x    Force this script to exit with the exit code from the docker run command
 
 Subcommands:
   build [<patch_file> <source>]       Build the CP (an optional patch file for a given source repo can be supplied)
   run_pov <blob_file> <harness_name>  Run the binary data blob against specified harness
   run_tests                           Run functionality tests
-  custom                              Run an arbitrary command in the docker container
+  custom <arbitrary cmd ...>          Run an arbitrary command in the docker container
 ```
 
 Each subcommand in `run.sh` ultimately results in an invocation of `docker run`
@@ -128,23 +144,22 @@ in usage or configuration. Such an error will result in an exit code of 1 being
 returned directly to the caller.
 
 Assuming no preceding errors, `run.sh` will exit after the call to `docker run`
-returns, regardless of the state of the target docker container. The `run.sh`
-script will return 0 if the container was launched and has internal state to
-report on. Otherwise, the exit code reflects the error code obtained from the
-failed invocation of `docker run`.
+returns, regardless of the state of the target docker container. If option "-x"
+is not specified, the `run.sh` script will return 0 if the container was
+launched and has internal state to report on. With "-x" specified, the `run.sh`
+script returns the exit code from `docker run`.
 
-The output obtained from a Docker container must be inspected to determine
-success or failure of the specified command. The `run.sh` script records the
-logs, ID, and exit code (if any), from all invocations of `docker run` in the
-folder `out/output`. The per invocation data will be found in subfolders with
-the naming scheme `<timestamp>--<subcommand>`, where `<timestamp>` is of the
-format `<seconds>.<nanoseconds>` from UTC and `<subcommand>` is the first
-argument passed to `run.sh`.
+The `run.sh` script records the logs, ID, and exit code (if any), from all
+invocations of `docker run` in the folder `out/output`. The per invocation data
+will be found in subfolders with the naming scheme `<timestamp>--<subcommand>`,
+where `<timestamp>` is of the format `<seconds>.<nanoseconds>` from UTC and
+`<subcommand>` is the first argument passed to `run.sh`.
 
 The contents of the subfolders (`out/output/<timestamp>--<subcommand>`) include:
 
 - `docker.cid`: Container ID recorded using the `--cidfile` option
-  to `docker run`
+  to `docker run`. This is used only for tracking and housekeeping of the
+  container.
 
 - `stdout.log`: stdout output from docker container
 
@@ -152,12 +167,47 @@ The contents of the subfolders (`out/output/<timestamp>--<subcommand>`) include:
 
 - `exitcode`: The exit code from the command in the docker container
 
-The `stdout.log` and `stderr.log` files will be useful to determine if
-certain scenarios occurred such as a sanitizer getting triggered as a result
-of `./run.sh run_pov ...`. The `exitcode` contents will be important for
-determining general success or failure of commands. The `docker.cid` file
-is only useful for tracking / housekeeping of docker artifacts and is not
-expected to be all that useful to a CRS.
+Note that the exit code value from `docker run` invocations may include
+docker-specific values. Per the `docker` conventions, these exit codes are
+expected to be in a range of 125 or higher. The CP-specific scripts and
+utilities are designed to not overload or reuse exit codes in the `docker`
+range.
+
+For the `build` subcommand, the recorded exit code will indicate if the build
+process completed successfully or not. Per usual Linux shell / bash conventions,
+a value of 0 indicates success, and a non-zero value (usually 1) indicates an
+error. The recorded standard output and standard error logs will contain any
+useful information regarding the CP-specific build process.
+
+For the `run_pov` subcommand, the recorded exit code will indicate if the PoV
+evaluation was performed or not. Per usual Linux shell / bash conventions,
+a value of 0 indicates the evaluation was performed, and a non-zero value
+(usually 1) indicates an error that stopped the evaluation from running. Note,
+the exit code does not indicate if a sanitizer triggered or not. Instead, the
+output (e.g., the contents of `stdout.log` and `stderr.log`) must be inspected
+to search for the applicable sanitizer strings (see the `sanitizers` element
+in the `project.yaml` file) and any helpful stacktraces. Per the exit code
+conventions for `run_pov`, any non-zero (error) value suggests an internal error
+that prevented the evaluation from running; therefore, sanitizers will likely
+only be detectable if the exit code is 0 indicating the evaluation of the
+submitted PoV was completed.
+
+For the `run_tests` subcommand, the recorded exit code will indicate if the
+functionality tests were performed and if there were any failures in the tests.
+Per usual Linux shell / bash conventions, a value of 0 indicates the tests
+were performed and there were no failures. A value of 1 indicates the tests
+did not complete successfully due to some internal error. Any value greater than
+1 (usually 2) but less than 125 (see note about `docker run` exit codes)
+indicates the tests were performed but failures were detected in the tests. This
+latter indicator suggests something in the build / patching of the CP has
+broken or invalidated the functionality and needs addressing. The standard
+output and standard error logs may be useful to determine why something failed
+in the tests; however, the exit code value is the ultimate indicator of
+success or failure.
+
+For the `custom` subcommand, the recorded exit code is the final exit code
+returned from the arbitrary command that was invoked. Its meaning is entirely
+subject to the invoked command(s).
 
 For almost all cases, a CRS should expect to see all four files from a
 successful invocation of `docker run` in the `run.sh` script. The one expected
@@ -172,31 +222,31 @@ the challenge project verification pipeline
 
 ```
 make cpsrc-prepare
-make docker-build
-make docker-config-local
+make docker-pull
 
-./run.sh build
+./run.sh -x build
 
-./run.sh run_tests
+./run.sh -x run_tests
 
-./run.sh run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
-./run.sh run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
 
-./run.sh build exemplar_only/cpv_1/patches/samples/good_patch.diff /samples
-./run.sh run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
-./run.sh run_tests
-
-git -C src/samples reset --hard HEAD
-./run.sh build exemplar_only/cpv_2/patches/samples/good_patch.diff /samples
-./run.sh run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
-./run.sh run_tests
+./run.sh -x build exemplar_only/cpv_1/patches/samples/good_patch.diff /samples
+./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_tests
 
 git -C src/samples reset --hard HEAD
-./run.sh build exemplar_only/cpv_1/patches/samples/bad_patch.diff /samples
-./run.sh run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
-./run.sh run_tests
+./run.sh -x build exemplar_only/cpv_2/patches/samples/good_patch.diff /samples
+./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_tests
 
 git -C src/samples reset --hard HEAD
-./run.sh build exemplar_only/cpv_2/patches/samples/bad_patch.diff /samples
-./run.sh run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x build exemplar_only/cpv_1/patches/samples/bad_patch.diff /samples
+./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_tests
+
+git -C src/samples reset --hard HEAD
+./run.sh -x build exemplar_only/cpv_2/patches/samples/bad_patch.diff /samples
+./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_tests
 ```
