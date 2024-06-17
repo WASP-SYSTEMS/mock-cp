@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased] – 2024-MM-DD
+## [3.0.0] – 2024-06-17
 
 ### Added
 
+- Added references to parallelization environment variable `NPROC_VAL`.
+- Added set of generic CP Base and Harness prefix and suffix environment
+  variables to be used by all CPs.
 - Added an `artifacts` sequence to the `cp_sources` entry in the
   `project.yaml`.
 - Added a check to `entrypoint.sh` to issue a warning if the host setting for
@@ -20,6 +23,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+- Changed base Docker image from Ubuntu 22 to base-clang from OSS-Fuzz.
+- Refactored harness to be libfuzzer compliant.
+- Moved `container_scripts/cp_build` to `container_scripts/cp_build.tmpl`
+  and added logic to `container_scripts/cmd_harness.sh` to replace
+  CP build prefix and suffix environment variables with the set values.
 - Changed `run.sh` to no longer add the `out/` prefix to the harness name
   argument in the `run_pov` command. The individual CPs will handle this
   name uniquely to their needs.

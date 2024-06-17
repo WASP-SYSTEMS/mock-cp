@@ -7,7 +7,7 @@ PRETEST_REQUIRED_FILES = \
 	$(TOP)/LICENSE \
 	$(TOP)/README.md \
 	$(TOP)/container_scripts/cmd_harness.sh \
-	$(TOP)/container_scripts/cp_build \
+	$(TOP)/container_scripts/cp_build.tmpl \
 	$(TOP)/container_scripts/cp_pov \
 	$(TOP)/container_scripts/cp_tests \
 	$(TOP)/container_scripts/entrypoint.sh \

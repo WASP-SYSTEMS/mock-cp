@@ -15,13 +15,13 @@ language: c
 cp_sources:
     samples:
         address: git@github.com:aixcc-sc/mock-cp-src.git
-        ref: v1.1.0
+        ref: v2.0.1
         artifacts:
             - src/samples/mock_vp
 
 # The docker_image property denotes the address to pull the pre-built Docker
 # image for the CP.
-docker_image: ghcr.io/aixcc-sc/mock-cp:v2.0.3
+docker_image: ghcr.io/aixcc-sc/mock-cp:v3.0.0
 
 # The sanitizers property denotes which sanitizers are available for scoring for
 # the CP. When specifying a sanitizer ID to the scoring server, use the *key*
@@ -43,6 +43,6 @@ sanitizers:
 # `run.sh run_pov <args>`.
 harnesses:
     id_1:
-        name: stdin_harness.sh
-        source: src/test/stdin_harness.sh
-        binary: out/stdin_harness.sh
+        name: filein_harness
+        source: src/test/filein_harness.c
+        binary: out/filein_harness

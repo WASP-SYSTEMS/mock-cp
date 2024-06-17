@@ -8,6 +8,11 @@ set -E
 set -u
 set -o pipefail
 
+: "${CP_BASE_BUILD_PREFIX:=}"
+: "${CP_BASE_BUILD_SUFFIX:=}"
+: "${CP_HARNESS_BUILD_PREFIX:=}"
+: "${CP_HARNESS_BUILD_SUFFIX:=}"
+
 # get name and directory of this script
 SCRIPT_FILE="$(basename "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
@@ -24,6 +29,14 @@ function __error_handler() {
     # shellcheck disable=SC2086
     exit ${__status}
 }
+
+# test if utility template exists
+if [[ -f "${TARGET_UTILITY}.tmpl" ]]; then
+    envsubst '$CP_BASE_BUILD_PREFIX,$CP_BASE_BUILD_SUFFIX,$CP_HARNESS_BUILD_PREFIX,$CP_HARNESS_BUILD_SUFFIX' < "${TARGET_UTILITY}.tmpl" | sudo tee "${TARGET_UTILITY}.gen" >/dev/null
+    sudo chmod 777 "${TARGET_UTILITY}.gen"
+    [[ -n ${LOCAL_USER} ]] && sudo chown ${LOCAL_USER} "${TARGET_UTILITY}.gen"
+    TARGET_UTILITY="${TARGET_UTILITY}.gen"
+fi
 
 # test if executable utility exists
 test -x "${TARGET_UTILITY}" || \

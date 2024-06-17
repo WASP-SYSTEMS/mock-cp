@@ -215,6 +215,60 @@ exception is `exitcode` will be missing if the container is still running.
 This may occur if `run.sh` is invoked with options such as
 `DOCKER_EXTRA_ARGS="-d"`.
 
+## CP Environment Variables
+
+The various CP containers are configured to support set of both generic and
+language-specific environment variables. These variables can be set using
+the `.env.docker` file or using the `-e <VARIABLE_NAME>=<VALUE>` argument
+syntax to `docker run` (e.g., `DOCKER_EXTRA_ARGS="-e CP_BASE_BUILD_PREFIX=time ./run.sh build`).
+
+### Generic Environment Variables
+
+The following are environment variables that will apply to all CPs:
+
+`CP_BASE_BUILD_PREFIX` - Precedes build command for CP base target (default: empty)
+
+`CP_BASE_BUILD_SUFFIX` - Follows build command for CP base target (default: empty)
+
+`CP_HARNESS_BUILD_PREFIX` - Precedes build command for CP harness(es) (default: empty)
+
+`CP_HARNESS_BUILD_SUFFIX` - Follows build command for CP harness(es) (default: empty)
+
+`NPROC_VAL` - Processing unit count to apply to CP build or test commands to control
+              parallelization (when supported) of internal commands (default: `nproc`).
+
+### C-Specific Environment Variables
+
+The following are environment variables that apply to the CPs for the C
+programming language (see the `language` element in the CP's `project.yaml`
+file).
+
+`CC` - C compiler binary
+
+`CP_BASE_CFLAGS` - C compiler flags for CP base target (default: CP-specific)
+
+`CP_BASE_EXTRA_CFLAGS`- Supplemental C compiler flags CP base target (default: empty)
+
+`CP_BASE_LDFLAGS` - Linker flags for CP base target (default: CP-specific)
+
+`CP_BASE_EXTRA_LDFLAGS` - Supplemental linker flags for CP base target (default: empy)
+
+`CP_BASE_LIBS` - Libraries to be linked for CP base target (default: CP-specific)
+
+`CP_BASE_EXTRA_LIBS` - Supplemental libraries to be linked for CP base target (default: empty)
+
+`CP_HARNESS_CFLAGS` - C compiler flags for CP harness(es) target (default: CP-specific)
+
+`CP_HARNESS_EXTRA_CFLAGS`- Supplemental C compiler flags for CP harness(es) target (default: empty)
+
+`CP_HARNESS_LDFLAGS` - Linker flags for CP harness(es) target (default: CP-specific)
+
+`CP_HARNESS_EXTRA_LDFLAGS` - Supplemental linker flags for CP harness(es) target (default: empty)
+
+`CP_HARNESS_LIBS` - Libraries to be linked for CP harness(es) target (default: CP-specific)
+
+`CP_HARNESS_EXTRA_LIBS` - Supplemental libraries to be linked for CP harness(es) target (default: empty)
+
 ## Sample Usage
 
 The below sample usage mirrors what the challenge evaluator does in
@@ -228,25 +282,25 @@ make docker-pull
 
 ./run.sh -x run_tests
 
-./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
-./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin filein_harness
+./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin filein_harness
 
-./run.sh -x build exemplar_only/cpv_1/patches/samples/good_patch.diff /samples
-./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x build exemplar_only/cpv_1/patches/samples/good_patch.diff samples
+./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin filein_harness
 ./run.sh -x run_tests
 
 git -C src/samples reset --hard HEAD
-./run.sh -x build exemplar_only/cpv_2/patches/samples/good_patch.diff /samples
-./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x build exemplar_only/cpv_2/patches/samples/good_patch.diff samples
+./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin filein_harness
 ./run.sh -x run_tests
 
 git -C src/samples reset --hard HEAD
-./run.sh -x build exemplar_only/cpv_1/patches/samples/bad_patch.diff /samples
-./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x build exemplar_only/cpv_1/patches/samples/bad_patch.diff samples
+./run.sh -x run_pov exemplar_only/cpv_1/blobs/sample_solve.bin filein_harness
 ./run.sh -x run_tests
 
 git -C src/samples reset --hard HEAD
-./run.sh -x build exemplar_only/cpv_2/patches/samples/bad_patch.diff /samples
-./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin stdin_harness.sh
+./run.sh -x build exemplar_only/cpv_2/patches/samples/bad_patch.diff samples
+./run.sh -x run_pov exemplar_only/cpv_2/blobs/sample_solve.bin filein_harness
 ./run.sh -x run_tests
 ```
