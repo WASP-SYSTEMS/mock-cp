@@ -17,10 +17,27 @@ die() {
 
 BLOB_FILE=${1:-}
 HARNESS_FILE=${OUT}/${2:-}
-
-export ASAN_OPTIONS=detect_leaks=0
+shift
+shift
 
 [[ -f "${BLOB_FILE}" ]] || die "Invalid input, missing blob file: $BLOB_FILE"
-[[ -x "${HARNESS_FILE}" ]] || die "Invalid input, missing harness file: $HARNESS_FILE"
+[[ -f "${HARNESS_FILE}" && -x "${HARNESS_FILE}" ]] || die "Invalid input, missing harness file: $HARNESS_FILE"
 
-bash -c "$HARNESS_FILE $BLOB_FILE" || true
+: "${ASAN_OPTIONS:=detect_leaks=0}"
+export ASAN_OPTIONS
+
+: "${FUZZER_CMD_OPTS:=-runs=1 -timeout=10}"
+
+pushd ${OUT} > /dev/null
+
+exit_code=0
+${HARNESS_FILE} ${FUZZER_CMD_OPTS} ${BLOB_FILE} || exit_code=$?
+echo "libfuzzer exit=${exit_code}"
+
+if [ $exit_code -eq 77 ]; then # libfuzzer error
+    die "Libfuzzer error"
+elif [ $exit_code -eq 70 ]; then # timeout
+  die "Libfuzzer timeout"
+fi
+
+exit 0
