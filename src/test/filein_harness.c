@@ -19,11 +19,23 @@ int setup_pipe_data(const uint8_t *data, size_t size)
     exit(-1);
   }
 
-  // Write the data then close the write end of the pipe
+  // Write the data
   numBytes = write(pipefd[1], data, size);
   if (numBytes == -1) {
     perror("write");
     exit(-1);
+  }
+
+  // Set the read end of the pipe to non-blocking
+  flags = fcntl(pipefd[0], F_GETFL, 0);
+  if (flags == -1) {
+      perror("fcntl F_GETFL");
+      exit(-1);
+  }
+
+  if (fcntl(pipefd[0], F_SETFL, flags | O_NONBLOCK) == -1) {
+      perror("fcntl F_SETFL");
+      exit(-1);
   }
 
   // Dup the read end of the pipe over the client fd
