@@ -14,7 +14,7 @@ language: c
 # to checking out the "main" branch of the specified repo from "address".
 cp_sources:
     samples:
-        address: git@github.com:WASP-SYSTEMS/mock-cp-src.git
+        address: https://github.com/WASP-SYSTEMS/mock-cp-src.git
         ref: v2.0.1
         artifacts:
             - src/samples/mock_vp
