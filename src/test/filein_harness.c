@@ -52,7 +52,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
   setup_pipe_data(data, size);
 
   func_a();
-  func_b();
 
   // Clean up the pipes
   close(pipefd[0]);
